@@ -1,0 +1,241 @@
+<html>
+	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	</head>
+	
+	<body>
+		<style>
+			td {
+				background-color: #ccc;
+				width:50px;
+				height:50px;
+			}
+			table {
+			    border-spacing: 0;
+			}
+		</style>
+		<table id="snake-board">
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+			<tr>
+				<td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td>
+			</tr>
+		</table>
+		<h1 id="score">
+		0
+		</h1>
+		
+		<script>
+			const boardId = '#snake-board';
+			const directionEnum = {
+				'up': 0,
+				'right': 1,
+				'down': 2,
+				'left': 3
+			};
+			
+			const boardLimits = {
+				x:$(boardId).find('tr').first().find('td').length,
+				y:$(boardId).find('tr').length
+			};
+			
+			const coordsFactory = () => ({
+				x:Math.floor(Math.random()*boardLimits.x)+1,
+				y:Math.floor(Math.random()*boardLimits.y)+1
+			});
+			
+			const snakeFactory = () => ({
+				score: 0,
+				xyStack: [coordsFactory()],
+				move: function(direction) {
+					let current = this.xyStack[this.xyStack.length-1]; //last in stack
+					let newPosition;
+					switch (direction) {
+						case directionEnum.up:
+							newPosition = {x:current.x,y:current.y-1};
+							break;
+						case directionEnum.right:
+							newPosition = {x:current.x+1,y:current.y};
+							break;
+						case directionEnum.down:
+							newPosition = {x:current.x,y:current.y+1};
+							break;
+						case directionEnum.left:
+							newPosition = {x:current.x-1,y:current.y};
+							break;
+					}
+					if (newPosition.x<1||newPosition.x>boardLimits.x) {
+						if (newPosition.x<1) {
+							newPosition.x+=boardLimits.x;
+						} else {
+							newPosition.x-=boardLimits.x;
+						}
+					} else if (newPosition.y<1||newPosition.y>boardLimits.y) {
+						if (newPosition.y<1) {
+							newPosition.y+=boardLimits.y;
+						} else {
+							newPosition.y-=boardLimits.y;
+						}
+					}
+					
+					//ok now we have the new position to be, lets check some things such as whether it touches the snake or food
+					if (newPosition.y == this.food.y && newPosition.x == this.food.x) {
+						this.xyStack.push(newPosition);
+						$('#score').html(++this.score);
+						this.generateNewFood();
+						return; //snake found food, add new position
+					}
+					
+					//remove tail square
+					this.xyStack.shift();
+					
+					
+					this.xyStack.forEach(checkEnd.bind(this));
+
+					function checkEnd(coords) {
+						if (newPosition.y == coords.y && newPosition.x == coords.x) {
+							console.log(this);
+							this.endGame();
+							return;
+						}
+					}
+					
+					//no events so just push new position onto xyStack
+					this.xyStack.push(newPosition);
+					return;
+				},
+				generateNewFood: function() {
+					function check() {//return coords if snake isn't on them, if snake is on them return false
+						let tempCoords = coordsFactory();
+						for (coords of this.xyStack) {
+							if (tempCoords.x == coords.x && tempCoords.y == coords.y) {
+								return false;
+							}
+						}
+						return tempCoords;
+					}
+					
+					let temp = false;
+					while (!temp) {//loop through until check doesn't return false, then it must be coords instead
+						temp = check.call(this);
+					}
+					
+					this.food = temp;
+					return;
+				},
+				food:{},
+				drawBoard: function() {
+					let squares = $(boardId).find('td');
+					for(n of squares) {
+						$(n).css('background-color','#ccc');//make board all grey again
+					}
+					this.xyStack.forEach(function(coords){
+						let x = coords.x;
+						let y = coords.y;
+						let square = $(boardId).find('tr:nth-child('+y+')').find('td:nth-child('+x+')');
+						square.css('background-color','#222');//make snake squares to almost black
+					});
+					let head = $(boardId).find('tr:nth-child('+this.xyStack[this.xyStack.length-1].y+')').find('td:nth-child('+this.xyStack[this.xyStack.length-1].x+')');
+					head.css('background-color','#000');//set snakes head to black
+					let foodx = this.food.x;
+					let foody = this.food.y;
+					function randColour() {
+						return 'rgb('+rand255()+','+rand255()+','+rand255()+')';
+						function rand255() {
+							return Math.floor(Math.random()*256);
+						}
+					}
+					$(boardId).find('tr:nth-child('+foody+')').find('td:nth-child('+foodx+')').css('background-color',randColour());//draw food
+				},
+				init: function(callback) {
+					this.generateNewFood.call(this);
+					callback();
+				},
+				endGame: function() {
+					this.running = false;
+					console.log('game over');
+					alert('game over');
+				},
+				running: true
+			});
+
+			main = (function() {
+				console.log('running main');
+				let game = snakeFactory();
+				game.init(function(){
+					$(document).on( "keydown", checkKey);
+					
+					let direction = directionEnum.up;
+					let takenDirection = directionEnum.up;
+					function checkKey(e) {
+						let newCoords = {};
+						e = e || window.event;
+						console.log('key down',e.keyCode);
+						switch(e.keyCode) {
+							case 38:
+								//up
+								console.log('up');
+								if (takenDirection == directionEnum.down) {break;}//cant change direction by 180 degrees
+								direction = directionEnum.up;
+								break;
+							case 40:
+								//down
+								console.log('down');
+								if (takenDirection == directionEnum.up) {break;}
+								direction = directionEnum.down;
+								break;
+							case 37:
+								//left
+								console.log('left');
+								if (takenDirection == directionEnum.right) {break;}
+								direction = directionEnum.left;
+								break;
+							case 39:
+								//right
+								console.log('right');
+								if (takenDirection == directionEnum.left) {break;}
+								direction = directionEnum.right;
+								break;
+						}
+
+					}
+					let interval = setInterval(onTimerTick, 100); // 100 milliseconds = 10 frames per sec
+					function onTimerTick() {
+						game.move(direction);
+						if (!game.running) {
+							clearInterval(interval);
+							return;
+						}
+						game.drawBoard();
+						takenDirection = direction;
+					}
+				});
+			})();
+		</script>
+	</body>
+</html>
